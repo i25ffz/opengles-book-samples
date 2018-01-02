@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="ogles2-demos" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="CH08_SimpleVertexShader">
+				<Option output="bin/Debug/CH08_SimpleVertexShader" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="CH08_GalaxyVertexShader">
+				<Option output="bin/Debug/CH08_GalaxyVertexShader" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add directory="Common" />
+		</Compiler>
+		<Linker>
+			<Add library="GLESv2" />
+			<Add library="EGL" />
+			<Add library="m" />
+			<Add library="X11" />
+		</Linker>
+		<Unit filename="Chapter_8/Galaxy_VertexShader/Galaxy_VertexShader.c">
+			<Option compilerVar="CC" />
+			<Option target="CH08_GalaxyVertexShader" />
+		</Unit>
+		<Unit filename="Chapter_8/Simple_VertexShader/Simple_VertexShader.c">
+			<Option compilerVar="CC" />
+			<Option target="CH08_SimpleVertexShader" />
+		</Unit>
+		<Unit filename="Common/esShader.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="Common/esShapes.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="Common/esTransform.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="Common/esUtil.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="Common/esUtil.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

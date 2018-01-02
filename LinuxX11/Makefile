@@ -10,7 +10,8 @@ COMMONSRC=./Common/esShader.c    \
 COMMONHRD=esUtil.h
 
 CH02SRC=./Chapter_2/Hello_Triangle/Hello_Triangle.c
-CH08SRC=./Chapter_8/Simple_VertexShader/Simple_VertexShader.c
+CH08SRC1=./Chapter_8/Simple_VertexShader/Simple_VertexShader.c
+CH08SRC2=./Chapter_8/Galaxy_VertexShader/Galaxy_VertexShader.c
 CH09SRC1=./Chapter_9/Simple_Texture2D/Simple_Texture2D.c
 CH09SRC2=./Chapter_9/MipMap2D/MipMap2D.c
 CH09SRC3=./Chapter_9/Simple_TextureCubemap/Simple_TextureCubemap.c
@@ -24,6 +25,7 @@ default: all
 
 all: ./Chapter_2/Hello_Triangle/CH02_HelloTriangle \
      ./Chapter_8/Simple_VertexShader/CH08_SimpleVertexShader \
+     ./Chapter_8/Galaxy_VertexShader/CH08_GalaxyVertexShader \
      ./Chapter_9/Simple_Texture2D/CH09_SimpleTexture2D \
      ./Chapter_9/MipMap2D/CH09_MipMap2D \
      ./Chapter_9/Simple_TextureCubemap/CH09_TextureCubemap \
@@ -38,8 +40,10 @@ clean:
 
 ./Chapter_2/Hello_Triangle/CH02_HelloTriangle: ${COMMONSRC} ${COMMONHDR} ${CH02SRC}
 	gcc ${COMMONSRC} ${CH02SRC} -o $@ ${INCDIR} ${LIBS}
-./Chapter_8/Simple_VertexShader/CH08_SimpleVertexShader: ${COMMONSRC} ${COMMONHDR} ${CH08SRC}
-	gcc ${COMMONSRC} ${CH08SRC} -o ./$@ ${INCDIR} ${LIBS}
+./Chapter_8/Simple_VertexShader/CH08_SimpleVertexShader: ${COMMONSRC} ${COMMONHDR} ${CH08SRC1}
+	gcc ${COMMONSRC} ${CH08SRC1} -o ./$@ ${INCDIR} ${LIBS}
+./Chapter_8/Galaxy_VertexShader/CH08_GalaxyVertexShader: ${COMMONSRC} ${COMMONHDR} ${CH08SRC2}
+	gcc ${COMMONSRC} ${CH08SRC2} -o ./$@ ${INCDIR} ${LIBS}
 ./Chapter_9/Simple_Texture2D/CH09_SimpleTexture2D: ${COMMONSRC} ${COMMONHDR} ${CH09SRC1}
 	gcc ${COMMONSRC} ${CH09SRC1} -o ./$@ ${INCDIR} ${LIBS}
 ./Chapter_9/MipMap2D/CH09_MipMap2D: ${COMMONSRC} ${COMMONHDR} ${CH09SRC2}
