@@ -18,25 +18,33 @@
 
 typedef struct
 {
-    // Handle to a program object
-    GLuint programObject;
+   // Handle to a program object
+   GLuint programObject;
 
-    // Attribute locations
-    GLint  positionLoc;
+   // Attribute locations
+   GLint  positionLoc;
+   GLint  normalLoc;
 
-    // Uniform locations
-    GLint  mvpLoc;
+   // Uniform locations
+   GLint  mvLoc;
+   GLint  projLoc;
+   GLint  lightPosLoc;
+   GLint  lightColorLoc;
+   GLint  matColorLoc;
 
-    // Vertex daata
-    GLfloat  *vertices;
-    GLuint *indices;
-    int       numIndices;
+   // Vertex daata
+   GLfloat  *vertices;
+   GLfloat  *normals;
+   GLuint *indices;
+   int       numIndices;
 
-    // Rotation angle
-    GLfloat   angle;
+   // Rotation angle
+   GLfloat   angle;
 
-    // MVP matrix
-    ESMatrix  mvpMatrix;
+   // MVP matrix
+   // ESMatrix  mvpMatrix;
+   ESMatrix  mvMatrix;
+   ESMatrix  projMatrix;
 } UserData;
 
 ///
@@ -44,100 +52,101 @@ typedef struct
 //
 int Init ( ESContext *esContext )
 {
-    esContext->userData = malloc(sizeof(UserData));
+   esContext->userData = malloc(sizeof(UserData));
 
-    UserData *userData = esContext->userData;
-    GLbyte vShaderStr[] =
+   UserData *userData = esContext->userData;
+
+   GLbyte vShaderStr[] =
         "precision highp float;\n"
         "precision highp int;\n"
-        "uniform mat4 modelMatrix;\n"
-        "uniform mat4 modelViewMatrix;\n"
-        "uniform mat4 projectionMatrix;\n"
-        "attribute vec3 position;\n"
-        "attribute vec2 uv;\n"
-        "varying vec2 vUv;\n"
         "\n"
-        "vec4 Universe_Shader1462567918635_91_main()\n"
-        "{\n"
-        "    vec4 Universe_Shader1462567918635_91_gl_Position = vec4(0.0);\n"
-        "    vUv = uv;\n"
-        "    Universe_Shader1462567918635_91_gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n"
-        "    return Universe_Shader1462567918635_91_gl_Position *= 1.0;\n"
-        "}\n"
+        "uniform mat4 u_projectionMatrix;\n"
+        "uniform mat4 u_modelViewMatrix;\n"
+        "attribute vec3 a_position;\n"
+        "attribute vec3 a_normal;\n"
+        "varying vec3 vNormal;\n"
+        "varying vec3 vPosition;\n"
         "\n"
-        "void main()\n"
+        "void main() \n"
         "{\n"
-        "    gl_Position = Universe_Shader1462567918635_91_main();\n"
-        "}\n";
+        "  vNormal = a_normal;\n"
+        "  vPosition = a_position;\n"
+        "  \n"
+        "  gl_Position = u_projectionMatrix * u_modelViewMatrix * vec4(a_position, 1.0);\n"
+        "}";
 
-    GLbyte fShaderStr[] =
+   GLbyte fShaderStr[] =
         "precision highp float;\n"
-        "precision highp int;\n"
-        "uniform float swirl;\n"
-        "uniform float time;\n"
-        "uniform float speed;\n"
-        "varying vec2 vUv;\n"
         "\n"
-        "vec4 Universe_Shader1462567918635_91_main()\n"
-        "{\n"
-        "    vec4 Universe_Shader1462567918635_91_gl_FragColor = vec4(0.0);\n"
-        "    vec2 uv = vUv - 0.5;\n"
-        "    float time = time * .1 + ((.25 + .05 * sin(time * speed * 0.1)) / (length(uv.xy) + .07)) * 2.2;\n"
-        "    float si = sin(time * swirl);\n"
-        "    float co = cos(time * 1.0 / swirl);\n"
-        "    mat2 ma = mat2(co, si, -si, co);\n"
-        "    float c = 1.0;\n"
-        "    float v1 = 0.0;\n"
-        "    float v2 = 0.0;\n"
-        "    for (int i = 0; i < 100; i++)\n"
-        "    {\n"
-        "        float s = float(i) * .035;\n"
-        "        vec3 p = s * vec3(uv, 0.0);\n"
-        "        p.xy *= ma;\n"
-        "        p += vec3(.22, .3, s - 1.5 - sin(time * .13) * .1);\n"
-        "        for (int i = 0; i < 8; i++)\n"
-        "        {\n"
-        "            p = abs(p) / dot(p, p) - 0.659;\n"
-        "        }\n"
-        "        v1 += dot(p, p) * .0015 * (1.8 + sin(length(uv.xy * 13.0) + .5 - time * .2));\n"
-        "        v2 += dot(p, p) * .0015 * (1.5 + sin(length(uv.xy * 13.5) + 2.2 - time * .3));\n"
-        "        c = length(p.xy * .5) * .35;\n"
+        "varying vec3 vNormal;\n"
+        "varying vec3 vPosition;\n"
+        "\n"
+        "uniform mat4 u_modelViewMatrix;    \n"
+        "uniform vec3 u_lightPosition;\n"
+        "uniform vec3 u_lightColor;\n"
+        "uniform vec3 u_materialColor;\n"
+        "\n"
+        "void main(void) {\n"
+        "    float ToonThresholds[4];\n"
+        "    ToonThresholds[0] = 0.97;\n"
+        "    ToonThresholds[1] = 0.7;\n"
+        "    ToonThresholds[2] = 0.2;\n"
+        "    ToonThresholds[3] = 0.03;\n"
+        "\n"
+        "    float ToonBrightnessLevels[5];\n"
+        "    ToonBrightnessLevels[0] = 1.0;\n"
+        "    ToonBrightnessLevels[1] = 0.06;\n"
+        "    ToonBrightnessLevels[2] = 0.01;\n"
+        "    ToonBrightnessLevels[3] = 0.35;\n"
+        "    ToonBrightnessLevels[4] = 0.45;\n"
+        "    \n"
+        "    // Light\n"
+        "    vec3 lightVectorW = normalize(vec3(vec4( u_lightPosition, 1.0) * u_modelViewMatrix) - vPosition);\n"
+        "    \n"
+        "    // diffuse\n"
+        "    float ndl = max(0.0, dot(vNormal, lightVectorW));\n"
+        "    \n"
+        "    vec3 color = u_materialColor;\n"
+        "    \n"
+        "    if (ndl > ToonThresholds[0]) {\n"
+        "        color += u_lightColor * ToonBrightnessLevels[0];\n"
+        "    } else if (ndl > ToonThresholds[1])  {\n"
+        "        color += u_lightColor * ToonBrightnessLevels[1];\n"
+        "    } \n"
+        "    \n"
+        "    if ( ndl < ToonThresholds[3]) {\n"
+        "        color -= u_lightColor * ToonBrightnessLevels[3];\n"
+        "    } else if ( ndl < ToonThresholds[2] ) {\n"
+        "        color -= u_lightColor * ToonBrightnessLevels[2];\n"
         "    }\n"
-        "\n"
-        "    float len = length(uv);\n"
-        "    v1 *= smoothstep(.7, .0, len);\n"
-        "    v2 *= smoothstep(.6, .0, len);\n"
-        "    float re = clamp(c, 0.0, 1.0);\n"
-        "    float gr = clamp((v1 + c) * .25, 0.0, 1.0);\n"
-        "    float bl = clamp(v2, 0.0, 1.0);\n"
-        "    vec3 col = vec3(re, gr, bl) + smoothstep(0.15, .0, len) * .9;\n"
-        "    Universe_Shader1462567918635_91_gl_FragColor = vec4(col, 1.0);\n"
-        "    return Universe_Shader1462567918635_91_gl_FragColor *= 1.0;\n"
-        "}\n"
-        "\n"
-        "void main()\n"
-        "{\n"
-        "    gl_FragColor = (Universe_Shader1462567918635_91_main());\n"
-        "}\n";
+        "    \n"
+        "    gl_FragColor = vec4( color, 1.0 );\n"
+        "}";
 
-    // Load the shaders and get a linked program object
-    userData->programObject = esLoadProgram ( vShaderStr, fShaderStr );
+   // Load the shaders and get a linked program object
+   userData->programObject = esLoadProgram ( vShaderStr, fShaderStr );
 
-    // Get the attribute locations
-    userData->positionLoc = glGetAttribLocation ( userData->programObject, "a_position" );
+   // Get the attribute locations
+   userData->positionLoc = glGetAttribLocation ( userData->programObject, "a_position" );
+   userData->normalLoc = glGetAttribLocation ( userData->programObject, "a_normal" );
 
-    // Get the uniform locations
-    userData->mvpLoc = glGetUniformLocation( userData->programObject, "u_mvpMatrix" );
+   // Get the uniform locations
+   userData->mvLoc = glGetUniformLocation( userData->programObject, "u_modelViewMatrix" );
+   userData->projLoc = glGetUniformLocation( userData->programObject, "u_projectionMatrix" );
+   userData->lightPosLoc = glGetUniformLocation( userData->programObject, "u_lightPosition" );
+   userData->lightColorLoc = glGetUniformLocation( userData->programObject, "u_lightColor" );
+   userData->matColorLoc = glGetUniformLocation( userData->programObject, "u_materialColor" );
 
-    // Generate the vertex data
-    userData->numIndices = esGenCube( 1.0, &userData->vertices,
-                                     NULL, NULL, &userData->indices );
+   // Generate the vertex data
+   userData->numIndices = esGenCube( 1.0, &userData->vertices,
+                                     &userData->normals, NULL, &userData->indices );
 
-    // Starting rotation angle for the cube
-    userData->angle = 45.0f;
+   // Starting rotation angle for the cube
+   userData->angle = 45.0f;
 
-    glClearColor ( 0.0f, 0.0f, 0.0f, 0.0f );
-    return GL_TRUE;
+   glClearColor ( 0.0f, 0.0f, 0.0f, 0.0f );
+   glEnable(GL_CULL_FACE);
+   return GL_TRUE;
 }
 
 
@@ -146,35 +155,35 @@ int Init ( ESContext *esContext )
 //
 void Update ( ESContext *esContext, float deltaTime )
 {
-    UserData *userData = (UserData*) esContext->userData;
-    ESMatrix perspective;
-    ESMatrix modelview;
-    float    aspect;
+   UserData *userData = (UserData*) esContext->userData;
+   // ESMatrix perspective;
+   // ESMatrix modelview;
+   float    aspect;
 
-    // Compute a rotation angle based on time to rotate the cube
-    userData->angle += ( deltaTime * 40.0f );
-    if( userData->angle >= 360.0f )
+   // Compute a rotation angle based on time to rotate the cube
+   userData->angle += ( deltaTime * 40.0f );
+   if( userData->angle >= 360.0f )
       userData->angle -= 360.0f;
 
-    // Compute the window aspect ratio
-    aspect = (GLfloat) esContext->width / (GLfloat) esContext->height;
+   // Compute the window aspect ratio
+   aspect = (GLfloat) esContext->width / (GLfloat) esContext->height;
 
-    // Generate a perspective matrix with a 60 degree FOV
-    esMatrixLoadIdentity( &perspective );
-    esPerspective( &perspective, 60.0f, aspect, 1.0f, 20.0f );
+   // Generate a perspective matrix with a 60 degree FOV
+   esMatrixLoadIdentity( &userData->projMatrix );
+   esPerspective( &userData->projMatrix, 60.0f, aspect, 0.1f, 100.0f );
 
-    // Generate a model view matrix to rotate/translate the cube
-    esMatrixLoadIdentity( &modelview );
+   // Generate a model view matrix to rotate/translate the cube
+   esMatrixLoadIdentity( &userData->mvMatrix );
 
-    // Translate away from the viewer
-    esTranslate( &modelview, 0.0, 0.0, -2.0 );
+   // Translate away from the viewer
+   esTranslate( &userData->mvMatrix, 0.0, 0.0, -2.0 );
 
-    // Rotate the cube
-    esRotate( &modelview, userData->angle, 1.0, 0.0, 1.0 );
+   // Rotate the cube
+   esRotate( &userData->mvMatrix, userData->angle, 1.0, 0.0, 1.0 );
 
-    // Compute the final MVP by multiplying the
-    // modevleiw and perspective matrices together
-    esMatrixMultiply( &userData->mvpMatrix, &modelview, &perspective );
+   // Compute the final MVP by multiplying the
+   // modevleiw and perspective matrices together
+   // esMatrixMultiply( &userData->mvpMatrix, &modelview, &perspective );
 }
 
 ///
@@ -182,30 +191,36 @@ void Update ( ESContext *esContext, float deltaTime )
 //
 void Draw ( ESContext *esContext )
 {
-    UserData *userData = esContext->userData;
+   UserData *userData = esContext->userData;
 
-    // Set the viewport
-    glViewport ( 0, 0, esContext->width, esContext->height );
+   // Set the viewport
+   glViewport ( 0, 0, esContext->width, esContext->height );
 
+   // Clear the color buffer
+   glClear ( GL_COLOR_BUFFER_BIT );
 
-    // Clear the color buffer
-    glClear ( GL_COLOR_BUFFER_BIT );
+   // Use the program object
+   glUseProgram ( userData->programObject );
 
-    // Use the program object
-    glUseProgram ( userData->programObject );
-
-    // Load the vertex position
-    glVertexAttribPointer ( userData->positionLoc, 3, GL_FLOAT,
+   // Load the vertex position
+   glVertexAttribPointer ( userData->positionLoc, 3, GL_FLOAT,
                            GL_FALSE, 3 * sizeof(GLfloat), userData->vertices );
+   glVertexAttribPointer ( userData->normalLoc, 3, GL_FLOAT,
+                           GL_FALSE, 3 * sizeof(GLfloat), userData->normals);
 
-    glEnableVertexAttribArray ( userData->positionLoc );
+   glEnableVertexAttribArray ( userData->positionLoc );
+   glEnableVertexAttribArray ( userData->normalLoc );
 
+   // Load the MVP matrix
+   glUniformMatrix4fv( userData->mvLoc, 1, GL_FALSE, (GLfloat*) &userData->mvMatrix.m[0][0] );
+   glUniformMatrix4fv( userData->projLoc, 1, GL_FALSE, (GLfloat*) &userData->projMatrix.m[0][0] );
 
-    // Load the MVP matrix
-    glUniformMatrix4fv( userData->mvpLoc, 1, GL_FALSE, (GLfloat*) &userData->mvpMatrix.m[0][0] );
+   glUniform3f( userData->lightPosLoc, 1.5f, -0.5f, 1.2f );
+   glUniform3f( userData->lightColorLoc, 1.0f, 1.0f, 1.0f );
+   glUniform3f( userData->matColorLoc, 0.5f, 0.5f, 0.3f );
 
-    // Draw the cube
-    glDrawElements ( GL_TRIANGLES, userData->numIndices, GL_UNSIGNED_INT, userData->indices );
+   // Draw the cube
+   glDrawElements ( GL_TRIANGLES, userData->numIndices, GL_UNSIGNED_INT, userData->indices );
 }
 
 ///
@@ -213,42 +228,42 @@ void Draw ( ESContext *esContext )
 //
 void ShutDown ( ESContext *esContext )
 {
-    UserData *userData = esContext->userData;
+   UserData *userData = esContext->userData;
 
-    if ( userData->vertices != NULL )
-    {
-        free ( userData->vertices );
-    }
+   if ( userData->vertices != NULL )
+   {
+      free ( userData->vertices );
+   }
 
-    if ( userData->indices != NULL )
-    {
-        free ( userData->indices );
-    }
+   if ( userData->indices != NULL )
+   {
+      free ( userData->indices );
+   }
 
-    // Delete program object
-    glDeleteProgram ( userData->programObject );
+   // Delete program object
+   glDeleteProgram ( userData->programObject );
 
-    free(userData);
+   free(userData);
 }
 
 int main ( int argc, char *argv[] )
 {
-    ESContext esContext;
-    UserData  userData;
+   ESContext esContext;
+   UserData  userData;
 
-    esInitContext ( &esContext );
-    esContext.userData = &userData;
+   esInitContext ( &esContext );
+   esContext.userData = &userData;
 
-    esCreateWindow ( &esContext, "Simple Texture 2D", 320, 240, ES_WINDOW_RGB );
+   esCreateWindow ( &esContext, "Toon Light", 640, 480, ES_WINDOW_RGB );
 
-    if ( !Init ( &esContext ) )
-        return 0;
+   if ( !Init ( &esContext ) )
+      return 0;
 
-    esRegisterDrawFunc ( &esContext, Draw );
-    esRegisterUpdateFunc ( &esContext, Update );
+   esRegisterDrawFunc ( &esContext, Draw );
+   esRegisterUpdateFunc ( &esContext, Update );
 
-    esMainLoop ( &esContext );
+   esMainLoop ( &esContext );
 
-    ShutDown ( &esContext );
+   ShutDown ( &esContext );
 }
 
